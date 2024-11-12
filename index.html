@@ -37,8 +37,6 @@
     <div id="authContainer">
         <input id="usernameInput" type="text" placeholder="Enter your name" />
         <input id="roomNameInput" type="text" placeholder="Chat Room Name" />
-        <input id="roomPasswordInput" type="password" placeholder="Room Password" />
-        <button id="createRoomButton">Create Room</button>
         <button id="joinRoomButton">Join Room</button>
     </div>
     <div id="chatContainer"></div>
@@ -46,67 +44,58 @@
     <button id="sendButton" style="display:none;">Send</button>
 
     <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const usernameInput = document.getElementById('usernameInput');
+        const roomNameInput = document.getElementById('roomNameInput');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const joinRoomButton = document.getElementById('joinRoomButton');
+
         let currentRoom = '';
         let username = '';
 
+        // Create a BroadcastChannel for communication
+        const channel = new BroadcastChannel('chat_channel');
+
         // Function to display messages in the chat container
         function addMessageToChat(message) {
-            const chatContainer = document.getElementById('chatContainer');
             chatContainer.innerHTML += `<div>${message}</div>`;
             chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
         }
 
-        // Event listener for localStorage changes
-        window.addEventListener('storage', function(event) {
-            if (event.key === 'chatMessage') {
-                addMessageToChat(event.newValue);
-            }
-        });
+        // Listen for messages from other tabs
+        channel.onmessage = (event) => {
+            addMessageToChat(event.data);
+        };
 
-        document.getElementById('createRoomButton').onclick = function() {
-            const roomName = document.getElementById('roomNameInput').value;
-            const roomPassword = document.getElementById('roomPasswordInput').value;
-            username = document.getElementById('usernameInput').value;
+        joinRoomButton.onclick = function() {
+            const roomName = roomNameInput.value;
+            username = usernameInput.value;
 
-            if (roomName && roomPassword && username) {
+            if (roomName && username) {
                 currentRoom = roomName; // Set the current room
                 document.getElementById('authContainer').style.display = 'none';
-                document.getElementById('chatContainer').style.display = 'block';
-                document.getElementById('messageInput').style.display = 'block';
-                document.getElementById('sendButton').style.display = 'block';
+                chatContainer.style.display = 'block';
+                messageInput.style.display = 'block';
+                sendButton.style.display = 'block';
 
-                addMessageToChat(`${username} created and joined the room ${currentRoom}`);
+                addMessageToChat(`${username} joined the room ${currentRoom}.`);
+                // Notify other tabs that a user has joined
+                channel.postMessage(`${username} joined the room ${currentRoom}.`);
             } else {
-                alert('Please fill in all fields.');
+                alert('Please enter your name and room name.');
             }
         };
 
-        document.getElementById('joinRoomButton').onclick = function() {
-            const roomName = document.getElementById('roomNameInput').value;
-            const roomPassword = document.getElementById('roomPasswordInput').value;
-            username = document.getElementById('usernameInput').value;
-
-            if (roomName && roomPassword && username) {
-                currentRoom = roomName; // Set the current room
-                document.getElementById('authContainer').style.display = 'none';
-                document.getElementById('chatContainer').style.display = 'block';
-                document.getElementById('messageInput').style.display = 'block';
-                document.getElementById('sendButton').style.display = 'block';
-
-                addMessageToChat(`${username} joined the room ${currentRoom}`);
-            } else {
-                alert('Please fill in all fields.');
-            }
-        };
-
-        document.getElementById('sendButton'). onclick = function() {
-            const messageInput = document.getElementById('messageInput');
+        // Sending a message
+        sendButton.onclick = function() {
             const message = messageInput.value;
             if (message) {
                 const fullMessage = `${username}: ${message}`;
                 addMessageToChat(fullMessage);
-                localStorage.setItem('chatMessage', fullMessage); // Store message in localStorage
-                messageInput.value = '';
+                // Send the message to other tabs
+                channel.postMessage(fullMessage);
+                messageInput.value = ''; // Clear input
             }
         };
     </script>
