@@ -3,8 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>Helpful resources</title>
+    <title>Chat App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #authContainer {
+            margin-bottom: 20px;
+        }
+
+        #chatContainer {
+            border: 1px solid #ccc;
+            height: 300px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            display: none;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 10px;
+        }
+    </style>
 </head>
 <body>
     <div id="authContainer">
@@ -14,9 +45,81 @@
         <button id="createRoomButton">Create Room</button>
         <button id="joinRoomButton">Join Room</button>
     </div>
-    <div id="chatContainer" style="display:none;"></div>
+    <div id="chatContainer"></div>
     <input id="messageInput" type="text" placeholder="Type a message..." style="display:none;" />
     <button id="sendButton" style="display:none;">Send</button>
-    <script src="script.js"></script>
+
+    <script>
+        let socket;
+        let currentRoom = '';
+        let username = '';
+
+        document.getElementById('createRoomButton').onclick = function() {
+            const roomName = document.getElementById('roomNameInput').value;
+            const roomPassword = document.getElementById('roomPasswordInput').value;
+            username = document.getElementById('usernameInput').value;
+
+            if (roomName && roomPassword && username) {
+                currentRoom = roomName; // Set the current room
+                socket = new WebSocket('wss://echo.websocket.org'); // Use a public WebSocket server
+
+                socket.onopen = function() {
+                    console.log('Connected to the WebSocket server');
+                    document.getElementById('authContainer').style.display = 'none';
+                    document.getElementById('chatContainer').style.display = 'block';
+                    document.getElementById('messageInput').style.display = 'block';
+                    document.getElementById('sendButton').style.display = 'block';
+                };
+
+                socket.onmessage = function(event) {
+                    const chatContainer = document.getElementById('chatContainer');
+                    chatContainer.innerHTML += `<div>${event.data}</div>`;
+                    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
+                };
+
+                socket.send(`${username} created and joined the room ${currentRoom}`);
+            } else {
+                alert('Please fill in all fields.');
+            }
+        };
+
+        document.getElementById('joinRoomButton').onclick = function() {
+            const roomName = document.getElementById('roomNameInput').value;
+            const roomPassword = document.getElementById('roomPasswordInput').value;
+            username = document.getElementById('usernameInput').value;
+
+            if (roomName && roomPassword && username) {
+                currentRoom = roomName; // Set the current room
+                socket = new WebSocket('wss://echo.websocket.org'); // Use a public WebSocket server
+
+                socket.onopen = function() {
+                    console.log('Connected to the WebSocket server');
+                    document.getElementById('authContainer').style.display = 'none';
+                    document.getElementById('chatContainer').style.display = 'block';
+                    document.getElementById('messageInput').style.display = 'block';
+                    document.getElementById('sendButton').style.display = 'block';
+                };
+
+                socket.onmessage = function(event) {
+                    const chatContainer = document.getElementById('chatContainer');
+                    chatContainer.innerHTML += `<div>${event.data}</div>`;
+                    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
+                };
+
+                socket.send(`${username} joined the room ${currentRoom}`);
+            } else {
+                alert('Please fill in all fields.');
+            }
+        };
+
+        document.getElementById('sendButton').onclick = function() {
+            const messageInput = document.getElementById('message Input');
+            const message = messageInput.value;
+            if (message) {
+                socket.send(`${username}: ${message}`);
+                messageInput.value = '';
+            }
+        };
+    </script>
 </body>
 </html>
