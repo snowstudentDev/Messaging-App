@@ -46,16 +46,22 @@
     <button id="sendButton" style="display:none;">Send</button>
 
     <script>
-        let socket;
         let currentRoom = '';
         let username = '';
-        let rooms = {}; // Simulated rooms storage
 
+        // Function to display messages in the chat container
         function addMessageToChat(message) {
             const chatContainer = document.getElementById('chatContainer');
             chatContainer.innerHTML += `<div>${message}</div>`;
             chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
         }
+
+        // Event listener for localStorage changes
+        window.addEventListener('storage', function(event) {
+            if (event.key === 'chatMessage') {
+                addMessageToChat(event.newValue);
+            }
+        });
 
         document.getElementById('createRoomButton').onclick = function() {
             const roomName = document.getElementById('roomNameInput').value;
@@ -64,8 +70,6 @@
 
             if (roomName && roomPassword && username) {
                 currentRoom = roomName; // Set the current room
-                rooms[currentRoom] = []; // Initialize the room
-
                 document.getElementById('authContainer').style.display = 'none';
                 document.getElementById('chatContainer').style.display = 'block';
                 document.getElementById('messageInput').style.display = 'block';
@@ -83,13 +87,7 @@
             username = document.getElementById('usernameInput').value;
 
             if (roomName && roomPassword && username) {
-                if (!rooms[roomName]) {
-                    alert('Room does not exist!');
-                    return;
-                }
-
                 currentRoom = roomName; // Set the current room
-
                 document.getElementById('authContainer').style.display = 'none';
                 document.getElementById('chatContainer').style.display = 'block';
                 document.getElementById('messageInput').style.display = 'block';
@@ -101,12 +99,13 @@
             }
         };
 
-        document.getElementById('sendButton ').onclick = function() {
+        document.getElementById('sendButton'). onclick = function() {
             const messageInput = document.getElementById('messageInput');
             const message = messageInput.value;
             if (message) {
-                addMessageToChat(`${username}: ${message}`);
-                rooms[currentRoom].push(`${username}: ${message}`); // Store message in the room
+                const fullMessage = `${username}: ${message}`;
+                addMessageToChat(fullMessage);
+                localStorage.setItem('chatMessage', fullMessage); // Store message in localStorage
                 messageInput.value = '';
             }
         };
