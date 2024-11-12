@@ -37,6 +37,7 @@
     <div id="authContainer">
         <input id="usernameInput" type="text" placeholder="Enter your name" />
         <input id="roomNameInput" type="text" placeholder="Chat Room Name" />
+        <button id="createRoomButton">Create Room</button>
         <button id="joinRoomButton">Join Room</button>
     </div>
     <div id="chatContainer"></div>
@@ -49,13 +50,12 @@
         const roomNameInput = document.getElementById('roomNameInput');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
+        const createRoomButton = document.getElementById('createRoomButton');
         const joinRoomButton = document.getElementById('joinRoomButton');
 
         let currentRoom = '';
         let username = '';
-
-        // Create a BroadcastChannel for communication
-        const channel = new BroadcastChannel('chat_channel');
+        let channel;
 
         // Function to display messages in the chat container
         function addMessageToChat(message) {
@@ -64,8 +64,34 @@
         }
 
         // Listen for messages from other tabs
-        channel.onmessage = (event) => {
-            addMessageToChat(event.data);
+        function setupChannel() {
+            if (channel) {
+                channel.close(); // Close the old channel if it exists
+            }
+            channel = new BroadcastChannel(currentRoom);
+
+            channel.onmessage = (event) => {
+                addMessageToChat(event.data);
+            };
+        }
+
+        createRoomButton.onclick = function() {
+            const roomName = roomNameInput.value;
+            username = usernameInput.value;
+
+            if (roomName && username) {
+                currentRoom = roomName; // Set the current room
+                setupChannel(); // Setup the channel for the room
+                document.getElementById('authContainer').style.display = 'none';
+                chatContainer.style.display = 'block';
+                messageInput.style.display = 'block';
+                sendButton.style.display = 'block';
+
+                addMessageToChat(`${username} created and joined the room ${currentRoom}.`);
+                channel.postMessage(`${username} created and joined the room ${currentRoom}.`);
+            } else {
+                alert('Please enter your name and room name.');
+            }
         };
 
         joinRoomButton.onclick = function() {
@@ -74,27 +100,25 @@
 
             if (roomName && username) {
                 currentRoom = roomName; // Set the current room
+                setupChannel(); // Setup the channel for the room
                 document.getElementById('authContainer').style.display = 'none';
                 chatContainer.style.display = 'block';
                 messageInput.style.display = 'block';
                 sendButton.style.display = 'block';
 
                 addMessageToChat(`${username} joined the room ${currentRoom}.`);
-                // Notify other tabs that a user has joined
                 channel.postMessage(`${username} joined the room ${currentRoom}.`);
             } else {
                 alert('Please enter your name and room name.');
             }
         };
 
-        // Sending a message
-        sendButton.onclick = function() {
+ sendButton.onclick = function() {
             const message = messageInput.value;
             if (message) {
                 const fullMessage = `${username}: ${message}`;
-                addMessageToChat(fullMessage);
-                // Send the message to other tabs
                 channel.postMessage(fullMessage);
+                addMessageToChat(fullMessage);
                 messageInput.value = ''; // Clear input
             }
         };
