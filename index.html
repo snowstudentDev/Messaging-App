@@ -4,12 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <title>Simple Chat App</title>
+    <title>Helpful resources</title>
 </head>
 <body>
-    <div id="chatContainer"></div>
-    <input id="messageInput" type="text" placeholder="Type a message...">
-    <button id="sendButton">Send</button>
+    <div id="authContainer">
+        <input id="usernameInput" type="text" placeholder="Enter your name" />
+        <input id="roomNameInput" type="text" placeholder="Chat Room Name" />
+        <input id="roomPasswordInput" type="password" placeholder="Room Password" />
+        <button id="createRoomButton">Create Room</button>
+        <button id="joinRoomButton">Join Room</button>
+    </div>
+    <div id="chatContainer" style="display:none;"></div>
+    <input id="messageInput" type="text" placeholder="Type a message..." style="display:none;" />
+    <button id="sendButton" style="display:none;">Send</button>
     <script src="script.js"></script>
 </body>
 </html>
