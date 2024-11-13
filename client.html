@@ -3,142 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat App</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <title>Connected Users Popup</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
         }
-        #messages {
-            border: 1px solid #444;
-            height: 300px;
-            overflow-y: scroll;
-            margin: 10px;
-            padding: 10px;
-            background-color: #1e1e1e;
-        }
-        #messageInput {
-            width: 80%;
-            padding: 10px;
-            border: none;
-            border-radius: 5px;
-            margin: 10px;
-            background-color: #333;
-            color: #ffffff;
-        }
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #6200ea;
-            color: #ffffff;
+        #showUsersBtn {
+            padding: 10px 20px;
+            font-size: 16px;
             cursor: pointer;
         }
-        button:hover {
-            background-color: #3700b3;
-        }
-        /* Modal Styles */
-        #usernameModal {
+        #popup {
             display: none;
             position: fixed;
-            left: 0;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid #ccc;
+            background-color: white;
+            padding: 20px;
+            z-index: 1000;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #overlay {
+            display: none;
+            position: fixed;
             top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
         }
-        #modalContent {
-            background-color: #1e1e1e;
-            padding: 20px;
-            border-radius: 5px;
-            text-align: center;
-        }
-        #usernameInput {
-            padding: 10px;
-            width: 80%;
-            border: none;
-            border-radius: 5px;
-            background-color: #333;
-            color: #ffffff;
-            margin-bottom: 10px;
+        #closePopup {
+            margin-top: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
 
-<h1 style="text-align: center;">Chat Application</h1>
-<div id="messages"></div>
-<input id="messageInput" placeholder="Type a message" />
-<button id="sendButton">Send</button>
+<button id="showUsersBtn">Show Connected Users</button>
 
-<!-- Modal for Username -->
-<div id="usernameModal">
-    <div id="modalContent">
-        <h2>Set Your Username</h2>
-        <input id="usernameInput" placeholder="Enter your name" />
-        <button id="setNameButton">Set Name</button>
-    </div>
+<div id="overlay"></div>
+<div id="popup">
+    <h2>Connected Users</h2>
+    <div id="userList"></div>
+    <button id="closePopup">Close</button>
 </div>
 
 <script>
-    const socket = io.connect('http://localhost:10000'); // Change to your server URL
+    let socket;
 
-    // Set up event listeners
-    const setNameButton = document.getElementById('setNameButton');
-    const usernameInput = document.getElementById('usernameInput');
-    const messageInput = document.getElementById('messageInput');
-    const sendButton = document.getElementById('sendButton');
-    const messagesDiv = document.getElementById('messages');
-    const usernameModal = document.getElementById('usernameModal');
+    function connectWebSocket() {
+        socket = new WebSocket('ws://localhost:3000'); // Update this URL if needed
 
-    let username = '';
+        socket.addEventListener('open', function() {
+            console.log('WebSocket connection established');
+        });
 
-    // Show the modal to set the username
-    usernameModal.style.display = 'flex';
+        socket.addEventListener('message', function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'connected-users') {
+                updateUser List(data.users);
+            }
+        });
 
-    // Handle setting the username
-    setNameButton.addEventListener('click', () => {
-        username = usernameInput.value;
-        if (username) {
-            socket.emit('set name', username);
-            usernameModal.style.display = 'none'; // Hide the modal
+        socket.addEventListener('error', function(event) {
+            console.error('WebSocket error observed:', event);
+            alert('WebSocket connection error. Please try again later.');
+        });
+
+        socket.addEventListener('close', function(event) {
+            console.log('WebSocket connection closed:', event);
+            setTimeout(connectWebSocket, 3000);
+        });
+    }
+
+    function updateUser  List(users) {
+        const userList = document.getElementById('userList');
+        userList.innerHTML = users.map(user => `<p>${user}</p>`).join('');
+    }
+
+    document.getElementById('showUsersBtn').addEventListener('click', function() {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'request-connected-users' }));
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('popup').style.display = 'block';
         } else {
-            alert('Please enter a valid name.');
+            alert('WebSocket connection is not open. Please try again later.');
         }
     });
 
-    // Handle sending messages
-    sendButton.addEventListener('click', () => {
-        const message = messageInput.value;
-        if (message && username) {
-            socket.emit('send message', { username, message });
-            messageInput.value = ''; // Clear the input field
-        } else {
-            alert('Please enter a message and set your name.');
-        }
+    document.getElementById('closePopup').addEventListener('click', function() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('popup').style.display = 'none';
     });
 
-    // Listen for messages from the server
-    socket.on('message', (data) => {
-        const messageElement = document.createElement('div');
-        messageElement.textContent = `${data.username}: ${data.message}`;
-        messagesDiv.appendChild(messageElement);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
+    document.getElementById('overlay').addEventListener('click', function() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('popup').style.display = 'none';
     });
 
-    // Listen for user connection events
-    socket.on('user connected', ( name) => {
-        const messageElement = document.createElement('div');
-        messageElement.textContent = `${name} has joined the chat.`;
-        messagesDiv.appendChild(messageElement);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
-    });
+    connectWebSocket();
 </script>
 
 </body>
