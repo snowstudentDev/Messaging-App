@@ -1,39 +1,40 @@
-const WebSocket = require('ws');
 const express = require('express');
 const http = require('http');
+const socketIo = require('socket.io');
 
-// Create an Express application
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = socketIo(server);
 
-// Serve static files (like the client HTML)
-app.use(express.static('public'));
+// Serve the client.html file
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/client.html'); // Ensure this path is correct
+});
 
-// WebSocket connection handling
-wss.on('connection', (ws) => {
-    console.log('A new client connected');
+// Handle socket connections
+io.on('connection', (socket) => {
+    console.log('A user connected');
 
-    // Handle incoming messages
-    ws.on('message', (message) => {
-        console.log(`Received: ${message}`);
-        
-        // Broadcast the message to all clients
-        wss.clients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(message);
-            }
-        });
+    // Handle setting the username
+    socket.on('set name', (name) => {
+        socket.username = name; // Store the username in the socket
+        socket.broadcast.emit('user connected', name); // Notify others
     });
 
-    // Handle client disconnect
-    ws.on('close', () => {
-        console.log('A client disconnected');
+    // Handle sending messages
+    socket.on('send message', (data) => {
+        // Emit the message to all clients
+        io.emit('message', data);
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log('A user disconnected');
     });
 });
 
-// Start the server on the specified port
-const PORT = process.env.PORT || 8080;
+// Start the server
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
