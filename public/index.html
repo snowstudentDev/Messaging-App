@@ -1,1 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connected Users Popup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #showUsersBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #popup {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid #ccc;
+            background-color: white;
+            padding: 20px;
+            z-index: 1000;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        #closePopup {
+            margin-top: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<button id="showUsersBtn">Show Connected Users</button>
+
+<div id="overlay"></div>
+<div id="popup">
+    <h2>Connected Users</h2>
+    <div id="userList"></div>
+    <button id="closePopup">Close</button>
+</div>
+
+<script>
+    let socket;
+
+    function connectWebSocket() {
+        socket = new WebSocket('ws://localhost:3000'); // Update this URL if needed
+
+        socket.addEventListener('open', function() {
+            console.log('WebSocket connection established');
+        });
+
+        socket.addEventListener('message', function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'connected-users') {
+                updateUser List(data.users);
+            }
+        });
+
+        socket.addEventListener('error', function(event) {
+            console.error('WebSocket error observed:', event);
+            alert('WebSocket connection error. Please try again later.');
+        });
+
+        socket.addEventListener('close', function(event) {
+            console.log('WebSocket connection closed:', event);
+            setTimeout(connectWebSocket, 3000);
+        });
+    }
+
+    function updateUser  List(users) {
+        const userList = document.getElementById('userList');
+        userList.innerHTML = users.map(user => `<p>${user}</p>`).join('');
+    }
+
+    document.getElementById('showUsersBtn').addEventListener('click', function() {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'request-connected-users' }));
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('popup').style.display = 'block';
+        } else {
+            alert('WebSocket connection is not open. Please try again later.');
+        }
+    });
+
+    document.getElementById('closePopup').addEventListener('click', function() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('popup').style.display = 'none';
+    });
+
+    document.getElementById('overlay').addEventListener('click', function() {
+        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('popup').style.display = 'none';
+    });
+
+    connectWebSocket();
+</script>
+
+</body>
+</html>
 
