@@ -3,49 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket Chat</title>
+    <title>Chat App</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
+        /* Add some basic styling */
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
         }
-        #chatContainer {
+        #messages {
             border: 1px solid #ccc;
-            padding: 10px;
             height: 300px;
             overflow-y: scroll;
+            margin-bottom: 10px;
         }
-        input {
+        #messageInput {
             width: 80%;
         }
     </style>
 </head>
 <body>
-    <h1>WebSocket Chat</h1>
-    <div id="chatContainer"></div>
-    <input id="messageInput" type="text" placeholder="Type a message..." />
-    <button id="sendButton">Send</button>
 
-    <script>
-        const chatContainer = document.getElementById('chatContainer');
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
+<h1>Chat Application</h1>
+<div id="messages"></div>
+<input id="usernameInput" placeholder="Enter your name" />
+<button id="setNameButton">Set Name</button>
+<br>
+<input id="messageInput" placeholder="Type a message" />
+<button id="sendButton">Send</button>
 
-        // Replace 'localhost' with your server's URL when deployed
-        const socket = new WebSocket(`ws://${window.location.host}`);
+<script>
+    const socket = io.connect('http://localhost:3000'); // Replace with your server URL
 
-        socket.onmessage = (event) => {
-            chatContainer.innerHTML += `<div>${event.data}</div>`;
-            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the bottom
-        };
+    // Set up event listeners
+    const setNameButton = document.getElementById('setNameButton');
+    const usernameInput = document.getElementById('usernameInput');
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const messagesDiv = document.getElementById('messages');
 
-        sendButton.onclick = () => {
-            const message = messageInput.value;
-            if (message) {
-                socket.send(message);
-                messageInput.value = ''; // Clear input
-            }
-        };
-    </script>
+    let username = '';
+
+    // Handle setting the username
+    setNameButton.addEventListener('click', () => {
+        username = usernameInput.value;
+        socket.emit('set name', username);
+        usernameInput.value = ''; // Clear the input field
+    });
+
+    // Handle sending messages
+    sendButton.addEventListener('click', () => {
+        const message = messageInput.value;
+        if (message && username) {
+            socket.emit('send message', { username, message });
+            messageInput.value = ''; // Clear the input field
+        } else {
+            alert('Please enter a message and set your name.');
+        }
+    });
+
+    // Listen for messages from the server
+    socket.on('message', (data) => {
+        const messageElement = document.createElement('div');
+        messageElement.textContent = `${data.username}: ${data.message}`;
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
+    });
+
+    // Listen for user connection events
+    socket.on('user connected', (name) => {
+        const messageElement = document.createElement('div');
+        messageElement.textContent = `${name} has joined the chat.`;
+        messagesDiv.appendChild(messageElement);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
+    });
+</script>
+
 </body>
 </html>
