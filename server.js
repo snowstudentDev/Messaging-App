@@ -1,58 +1,42 @@
 const express = require('express');
 const http = require('http');
-const WebSocket = require('ws');
+const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = socketIo(server);
 
-let connectedUsers = [];
+app.use(express.static('public'));
 
-// Serve the HTML file
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
+io.on('connection', (socket) => {
+    console.log('A user connected');
 
-// Handle WebSocket connections
-wss.on('connection', (ws) => {
-    console.log('New client connected');
-    
-    // Add new user to the list
-    connectedUsers.push(ws);
-    
-    // Notify all clients about the connected users
-    broadcastConnectedUsers();
-
-    // Handle messages from clients
-    ws.on('message', (message) => {
-        const data = JSON.parse(message);
-        if (data.type === 'request-connected-users') {
-            ws.send(JSON.stringify({ type: 'connected-users', users: connectedUsers.length }));
-        }
+    socket.on('setName', (name) => {
+        socket.username = name;
+        io.emit('userJoined', name);
     });
 
-    // Remove user from the list on disconnect
-    ws.on('close', () => {
-        console.log('Client disconnected');
-        connectedUsers = connectedUsers.filter(client => client !== ws);
-        broadcastConnectedUsers();
+    socket.on('createGroup', (groupName) => {
+        const groupId = Math.random().toString(36).substring(2, 15);
+        socket.join(groupId); // Automatically join the creator to the group
+        io.emit('groupCreated', { groupName, groupId });
+    });
+
+    socket.on('joinGroup', (groupId) => {
+        socket.join(groupId);
+        io.to(groupId).emit('userJoinedGroup', socket.username);
+    });
+
+    socket.on('sendMessage', (data) => {
+        const { groupId, message } = data;
+        io.to(groupId).emit('receiveMessage', { user: socket.username, message });
+    });
+
+    socket.on('disconnect', () => {
+        console.log('User  disconnected');
     });
 });
 
-// Broadcast connected users to all clients
-function broadcastConnectedUsers() {
-    const userCount = connectedUsers.length;
-    const message = JSON.stringify({ type: 'connected-users', users: Array(userCount).fill('User ') });
-    
-    connectedUsers.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
-        }
-    });
-}
-
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+server.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
 });
