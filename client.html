@@ -6,33 +6,88 @@
     <title>Chat App</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        /* Add some basic styling */
         body {
             font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
         }
         #messages {
-            border: 1px solid #ccc;
+            border: 1px solid #444;
             height: 300px;
             overflow-y: scroll;
-            margin-bottom: 10px;
+            margin: 10px;
+            padding: 10px;
+            background-color: #1e1e1e;
         }
         #messageInput {
             width: 80%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            background-color: #333;
+            color: #ffffff;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #6200ea;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3700b3;
+        }
+        /* Modal Styles */
+        #usernameModal {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+        }
+        #modalContent {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        #usernameInput {
+            padding: 10px;
+            width: 80%;
+            border: none;
+            border-radius: 5px;
+            background-color: #333;
+            color: #ffffff;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
 
-<h1>Chat Application</h1>
+<h1 style="text-align: center;">Chat Application</h1>
 <div id="messages"></div>
-<input id="usernameInput" placeholder="Enter your name" />
-<button id="setNameButton">Set Name</button>
-<br>
 <input id="messageInput" placeholder="Type a message" />
 <button id="sendButton">Send</button>
 
+<!-- Modal for Username -->
+<div id="usernameModal">
+    <div id="modalContent">
+        <h2>Set Your Username</h2>
+        <input id="usernameInput" placeholder="Enter your name" />
+        <button id="setNameButton">Set Name</button>
+    </div>
+</div>
+
 <script>
-    const socket = io.connect('http://localhost:3000'); // Replace with your server URL
+    const socket = io.connect('http://localhost:10000'); // Change to your server URL
 
     // Set up event listeners
     const setNameButton = document.getElementById('setNameButton');
@@ -40,14 +95,22 @@
     const messageInput = document.getElementById('messageInput');
     const sendButton = document.getElementById('sendButton');
     const messagesDiv = document.getElementById('messages');
+    const usernameModal = document.getElementById('usernameModal');
 
     let username = '';
+
+    // Show the modal to set the username
+    usernameModal.style.display = 'flex';
 
     // Handle setting the username
     setNameButton.addEventListener('click', () => {
         username = usernameInput.value;
-        socket.emit('set name', username);
-        usernameInput.value = ''; // Clear the input field
+        if (username) {
+            socket.emit('set name', username);
+            usernameModal.style.display = 'none'; // Hide the modal
+        } else {
+            alert('Please enter a valid name.');
+        }
     });
 
     // Handle sending messages
@@ -70,7 +133,7 @@
     });
 
     // Listen for user connection events
-    socket.on('user connected', (name) => {
+    socket.on('user connected', ( name) => {
         const messageElement = document.createElement('div');
         messageElement.textContent = `${name} has joined the chat.`;
         messagesDiv.appendChild(messageElement);
