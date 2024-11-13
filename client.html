@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #chatContainer {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+        }
+        input {
+            width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+    <div id="chatContainer"></div>
+    <input id="messageInput" type="text" placeholder="Type a message..." />
+    <button id="sendButton">Send</button>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        // Replace 'localhost' with your server's URL when deployed
+        const socket = new WebSocket(`ws://${window.location.host}`);
+
+        socket.onmessage = (event) => {
+            chatContainer.innerHTML += `<div>${event.data}</div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the bottom
+        };
+
+        sendButton.onclick = () => {
+            const message = messageInput.value;
+            if (message) {
+                socket.send(message);
+                messageInput.value = ''; // Clear input
+            }
+        };
+    </script>
+</body>
+</html>
