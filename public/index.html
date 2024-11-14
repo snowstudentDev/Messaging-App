@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Group Chat Application</title>
     <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        input {
+            margin: 5px;
+            padding: 10px;
+            width: 200px;
+        }
+        button {
+            padding: 10px;
+        }
+        h2 {
+            margin-top: 20px;
+        }
+        #consoleOutput {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+    </style>
 </head>
 <body>
     <h1>Group Chat Application</h1>
@@ -12,8 +37,12 @@
     <input id="password" type="password" placeholder="Password" />
     <button onclick="createServer()">Create Server</button>
     <button onclick="joinServer()">Join Server</button>
+    
     <h2>Connected Users:</h2>
     <ul id="userList"></ul>
+
+    <h2>Console Output:</h2>
+    <div id="consoleOutput"></div>
 
     <script>
         const socket = io('http://localhost:3000');
@@ -34,12 +63,14 @@
 
         // Listen for server creation confirmation
         socket.on('serverCreated', ({ serverName }) => {
-            console.log(`Server ${serverName} created successfully.`);
+            alert(`Server "${serverName}" created successfully.`);
+            logToConsole(`Server "${serverName}" created successfully.`);
         });
 
         // Listen for successful joining of a server
         socket.on('joinedServer', ({ serverName }) => {
-            console.log(`Joined server: ${serverName}`);
+            alert(`Joined server: "${serverName}".`);
+            logToConsole(`Joined server: "${serverName}".`);
         });
 
         // Listen for user list updates
@@ -51,12 +82,23 @@
                 li.textContent = user;
                 userList.appendChild(li);
             });
+            logToConsole(`User  list updated: ${users.join(', ')}`);
         });
 
         // Listen for errors
         socket.on('error', (message) => {
-            console.error(message);
+            alert(message);
+            logToConsole(`Error: ${message}`);
         });
+
+        // Function to log messages to the console output
+        function logToConsole(message) {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const newMessage = document.createElement('div');
+            newMessage.textContent = message;
+            consoleOutput.appendChild(newMessage);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight; // Auto-scroll to the bottom
+        }
     </script>
 </body>
 </html>
